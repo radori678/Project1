@@ -9,8 +9,9 @@ import re
 import codecs
 import json
 from pymongo import MongoClient
+from collections import defaultdict
 
-osm_file = '/Users/Stevenstuff/Downloads/raleigh_north-carolina.osm'
+osmfile = '/Users/Stevenstuff/Downloads/raleigh_north-carolina.osm'
 
 lower = re.compile(r'^([a-z]|_)*$')
 lower_colon = re.compile(r'^([a-z]|_)*:([a-z]|_)*$')
@@ -86,5 +87,87 @@ def process_map(file_in, pretty=False):
     return data
 
 
-client = MongoClient("mongodb://localhost:27017")
-data = process_map(osm_file, True)
+street_type_re = re.compile(r'\b\S+\.?$', re.IGNORECASE)
+
+street_types = defaultdict(int)
+
+expected = ["Street", "Avenue", "Boulevard", "Drive", "Court", "Place", "Square", "Lane", "Road",
+            "Trail", "Parkway", "Commons", "Plaza", "Center", "Bypass", "Circle", "Way", "Highway 54"]
+
+# UPDATE THIS VARIABLE
+mapping = {"St": "Street",
+           "St.": "Street",
+           "st": "Street",
+           "Ave.": "Avenue",
+           "Ave": "Avenue",
+           "avenue": "Avenue",
+           "AVE": "Avenue",
+           "ave": "Avenue",
+           "Blvd.": "Boulevard",
+           "Rd.": "Road",
+           "CIrcle": "Circle"
+           }
+
+
+def audit_street_type(street_types, street_name):
+    m = street_type_re.search(street_name)
+    if m:
+        street_type = m.group()
+        if street_type not in expected:
+            street_types[street_type].add(street_name)
+
+
+def is_street_name(elem):
+    return elem.attrib['k'] == "addr:street"
+
+
+def audit(osmfile):
+    osm_file = open(osmfile, "r")
+    street_types = defaultdict(set)
+    for event, elem in ET.iterparse(osm_file, events=("start",)):
+
+        if elem.tag == "node" or elem.tag == "way":
+            for tag in elem.iter("tag"):
+                if is_street_name(tag):
+                    audit_street_type(street_types, tag.attrib['v'])
+
+    return street_types
+
+
+def update_name(streetname, mapping):
+    updatednames_sec = []
+    name = streetname.split()
+    for index, word in enumerate(name):
+        if word in mapping.keys():
+            updatednames_sec.append(mapping[word])
+        else:
+            updatednames_sec.append(word)
+    updatednames = ' '.join(updatednames_sec)
+    return updatednames
+
+
+def get_db(db_name):
+    from pymongo import MongoClient
+    client = MongoClient('localhost:27017')
+    db = client[db_name]
+    return db
+
+
+def make_pipeline():
+    pipeline = [{"$match": {"address.postcode": {"$exists": 1}}},
+                {"$group": {"_id": "$address.postcode", "count": {"$sum": 1}}},
+                {"$sort": {"count": -1}}]
+
+    return pipeline
+
+
+def aggregate(db, pipeline):
+    return [doc for doc in db["raleigh_north-carolina.osm"].aggregate(pipeline)]
+
+
+if __name__ == '__main__':
+    db = get_db('raleigh')
+    pipeline = make_pipeline()
+    result = aggregate(db, pipeline)
+
+    pprint.pprint(result)
