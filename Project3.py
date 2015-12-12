@@ -154,6 +154,32 @@ def make_pipeline():
     # {"$sort": {"address.housenumber": 1}},
     # {"$match": {"address.housenumber": {"$regex": '[-a-zA-Z]'}}}]
 
+    # top contributing user
+    # pipeline = [{"$group":{"_id":"$created.user", "count":{"$sum":1}}},
+    # {"$sort":{"count": -1}}, {"$limit":1}]
+
+    # number of users contributing equal to or less than 10 times
+    # pipeline = [{"$group": {"_id": "$created.user", "count": {"$sum":1}}},
+    # {"$group": {"_id": "$count", "num_users": {"$sum":1}}},
+    # {"$match": {"_id": {"$lte": 10}}},
+    # {"$group": {"_id": None, "total": {"$sum": "$num_users"}}}]
+
+    # list of amenities
+    pipeline = [{"$match": {"amenity": {"$exists": 1}}},
+                {"$group": {"_id": "$amenity", "count": {"$sum": 1}}},
+                {"$sort": {"count": -1}}]
+
+    # places of worship
+    # pipeline = [{"$match":{"amenity":{"$exists":1}, "amenity":"place_of_worship"}},
+    # {"$group":{"_id":"$religion", "count":{"$sum":1}}}]
+
+    # number of cafes
+    # pipeline = [{"$match":{"amenity":{"$exists":1}, "amenity":"cafe"}},
+    # {"$group":{"_id": None, "count":{"$sum":1}}}]
+
+    # number of chinese restaurants
+    # pipeline = [{"$match":{"cuisine": "chinese"}},
+    # {"$group":{"_id": None, "count":{"$sum": 1}}}]
     return pipeline
 
 
@@ -162,9 +188,11 @@ def aggregate(db, pipeline):
 
 
 if __name__ == '__main__':
-    process_map(osmfile, True)
+    # process_map(osmfile, True)
     db = get_db('raleigh')
-    # pipeline = make_pipeline()
-    # result = aggregate(db, pipeline)
+    # find distinct users
+    # print len(db["raleigh_north-carolina.osm"].distinct("created.user"))
+    pipeline = make_pipeline()
+    result = aggregate(db, pipeline)
 
-    # pprint.pprint(result)
+    pprint.pprint(result)
