@@ -1,0 +1,8 @@
+https://s3.amazonaws.com/metro-extracts.mapzen.com/raleigh_north-carolina.osm.bz2
+
+Raleigh is the capital of North Carolina, and is the metropolitan area
+where I was raised. I chose Raleigh because of my familiarity with the area
+and my curiosity as to how complete the OSM data was in regard to the city.
+Raleigh is mostly suburban, with a small downtown region and is part of a larger
+“Research Triangle” area composing of the cities Raleigh and Durham, and the
+towns of Cary and Chapel Hill.
