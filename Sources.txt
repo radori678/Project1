@@ -1,0 +1,8 @@
+#Raleigh OSM XML data
+https://mapzen.com/data/metro-extracts
+
+#OSM bots
+http://wiki.openstreetmap.org/wiki/Bot
+
+#robomongo
+http://robomongo.org/
